@@ -18,13 +18,28 @@ import static java.util.concurrent.TimeUnit.*;
  * @since 01.10.2016
  */
 public class EventCounter implements IEventCounter {
-
+    /**
+     * Планировщик для выполнения отложенных задач.
+     */
     private final ScheduledExecutorService executorService;
-
+    /**
+     * Счетчик количества событий которые ваполнялись меньше минуты назад.
+     */
     private final AtomicInteger minuteEventCounter = new AtomicInteger();
+    /**
+     * Счетчик количества событий которые выполнялись больше минуты,
+     * но меньше часа назад.
+     */
     private final AtomicInteger hourEventCounter = new AtomicInteger();
+    /**
+     * Счетчик количества событий которые выполнялись больше часа,
+     * но меньше суток назад.
+     */
     private final AtomicInteger dayEventCounter = new AtomicInteger();
 
+    /**
+     * Создает новый счетчик событий
+     */
     public EventCounter() {
         final int processors = Runtime.getRuntime().availableProcessors();
         executorService = Executors.newScheduledThreadPool(processors);
@@ -35,17 +50,17 @@ public class EventCounter implements IEventCounter {
      */
     @Override
     public boolean registerEvent() {
-        final TimerTask timerTask = new TimerTask(MINUTES);
+        final CounterUpdateTask counterUpdateTask = new CounterUpdateTask(MINUTES);
         minuteEventCounter.incrementAndGet();
         try {
-            executorService.schedule(timerTask, 1, MINUTES);
+            //Откладываем выполнение задачи на одну минуту
+            executorService.schedule(counterUpdateTask, 1, MINUTES);
         } catch (RejectedExecutionException e) {
             minuteEventCounter.decrementAndGet();
             return false;
         }
         return true;
     }
-
 
     /**
      * {@inheritDoc}
@@ -73,38 +88,61 @@ public class EventCounter implements IEventCounter {
                 + dayEventCounter.get();
     }
 
-    private class TimerTask implements Runnable {
+    /**
+     * Задача обновляющая счетчики задач за минуту, час и день.
+     */
+    private class CounterUpdateTask implements Runnable {
+        /**
+         * Для указания текущего типа счетчика для обновления.
+         */
         private final TimeUnit timeUnit;
 
-        TimerTask(final TimeUnit timeUnit) {
+        /**
+         * Создает новую задачу обновления счетчиков
+         *
+         * @param timeUnit тип текущего счетчика для обновления.
+         */
+        CounterUpdateTask(final TimeUnit timeUnit) {
             this.timeUnit = timeUnit;
         }
 
         @Override
         public void run() {
-            final TimerTask nextTimerTask;
+            final CounterUpdateTask nextCounterUpdateTask;
+            //Проверяем какие счетчики нужно обновить
             switch (timeUnit) {
                 case MINUTES:
-                    nextTimerTask = new TimerTask(HOURS);
+                    nextCounterUpdateTask = new CounterUpdateTask(HOURS);
+                    //Отмечаем что событие произошло больше минуты назад
                     minuteEventCounter.decrementAndGet();
+                    //Отмечаем что событие произошло меньше часа назад
                     hourEventCounter.incrementAndGet();
                     try {
-                        executorService.schedule(nextTimerTask, 59, MINUTES);
+                        //Откладываем задачу на 59 минут т.к. текущая задача
+                        //выполняется через минуту после события.
+                        //Новая задача будет выполнена через час после события.
+                        executorService.schedule(nextCounterUpdateTask, 59, MINUTES);
                     } catch (RejectedExecutionException ex) {
                         hourEventCounter.decrementAndGet();
                     }
                     break;
                 case HOURS:
-                    nextTimerTask = new TimerTask(DAYS);
+                    nextCounterUpdateTask = new CounterUpdateTask(DAYS);
+                    //Отмечаем что событие произошло больше часа назад
                     hourEventCounter.decrementAndGet();
+                    //Отмечаем что событие произошло меньше суток назад
                     dayEventCounter.incrementAndGet();
                     try {
-                        executorService.schedule(nextTimerTask, 23, HOURS);
+                        //Откладываем задачу на 23 часа т.к. текущая задача
+                        //выполняется через час после события.
+                        //Новая задача будет выполнена через сутки после события.
+                        executorService.schedule(nextCounterUpdateTask, 23, HOURS);
                     } catch (RejectedExecutionException ex) {
                         dayEventCounter.decrementAndGet();
                     }
                     break;
                 case DAYS:
+                    //Отмечаем что событие произошло больше суток назад
                     dayEventCounter.decrementAndGet();
             }
         }
