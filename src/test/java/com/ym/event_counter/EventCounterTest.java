@@ -4,9 +4,9 @@ import org.junit.Assert;
 import org.junit.Test;
 
 /**
- * Unit test for simple App.
+ * Unit test for EventCounter.
  */
-public class AppTest {
+public class EventCounterTest {
 
     /**
      * Rigourous Test :-)
