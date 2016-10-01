@@ -31,8 +31,12 @@ public class EventCounterTest {
         Assert.assertEquals(3, eventCounter.getEventsPerHour());
         Assert.assertEquals(3, eventCounter.getEventsPerDay());
 
-        Thread.sleep(TimeUnit.SECONDS.toMillis(61));
+        Thread.sleep(TimeUnit.SECONDS.toMillis(59));
+        Assert.assertEquals(3, eventCounter.getEventsPerMinute());
+        Assert.assertEquals(3, eventCounter.getEventsPerHour());
+        Assert.assertEquals(3, eventCounter.getEventsPerDay());
 
+        Thread.sleep(TimeUnit.SECONDS.toMillis(2));
         Assert.assertEquals(0, eventCounter.getEventsPerMinute());
         Assert.assertEquals(3, eventCounter.getEventsPerHour());
         Assert.assertEquals(3, eventCounter.getEventsPerDay());
