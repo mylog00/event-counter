@@ -48,6 +48,10 @@ final class QueueConsumer implements Runnable {
      * @param outputQueueCounter счетчик событий в выходной очереди
      * @param offset             Время (в миллисекундах) на которое следует продлить
      *                           жизнь события при перемещении в выходную очередь
+     * @throws IllegalArgumentException если {@code offset} меньше или равен нулю
+     * @throws NullPointerException     если {@code inputQueue}
+     *                                  или {@code inputQueueCounter}
+     *                                  не заданы
      */
     QueueConsumer(
             final BlockingQueue<Long> inputQueue,
@@ -55,6 +59,13 @@ final class QueueConsumer implements Runnable {
             final BlockingQueue<Long> outputQueue,
             final AtomicInteger outputQueueCounter,
             final long offset) {
+        if (offset <= 0) {
+            throw new IllegalArgumentException("Offset must greater than 0");
+        }
+        if (inputQueue == null || inputQueueCounter == null) {
+            throw new NullPointerException(
+                    "inputQueue and inputQueueCounter must not be null");
+        }
         this.inputQueue = inputQueue;
         this.outputQueue = outputQueue;
         this.offset = offset;
@@ -68,6 +79,9 @@ final class QueueConsumer implements Runnable {
      *
      * @param inputQueue        входная очередь от событий
      * @param inputQueueCounter счетчик событий во входной очереди
+     * @throws NullPointerException если {@code inputQueue}
+     *                              или {@code inputQueueCounter}
+     *                              не заданы
      */
     QueueConsumer(
             final BlockingQueue<Long> inputQueue,
