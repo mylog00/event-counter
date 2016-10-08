@@ -48,8 +48,8 @@ public class EventCounterTest {
 
     @Test
     public void testMultiThreadEvents() throws InterruptedException {
-        final int threadNum = 1000;
-        final int iterations = 1000;
+        final int threadNum = 100;
+        final int iterations = 6000;
         final int allEvents = threadNum * iterations;
         for (int i = 0; i < threadNum; i++) {
             executor.submit(new Loader(eventCounter, iterations));
